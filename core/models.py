@@ -348,6 +348,7 @@ class Feeding(models.Model):
             ("breast milk", _("Breast milk")),
             ("formula", _("Formula")),
             ("fortified breast milk", _("Fortified breast milk")),
+            ("mixed", _("Mixed")),
             ("solid food", _("Solid food")),
         ],
         max_length=255,
@@ -366,6 +367,13 @@ class Feeding(models.Model):
         verbose_name=_("Method"),
     )
     amount = models.FloatField(blank=True, null=True, verbose_name=_("Amount"))
+    breast_milk_amount = models.FloatField(
+        blank=True, null=True, verbose_name=_("Breast milk amount")
+    )
+    formula_amount = models.FloatField(
+        blank=True, null=True, verbose_name=_("Formula amount")
+    )
+
     notes = models.TextField(blank=True, null=True, verbose_name=_("Notes"))
     tags = TaggableManager(blank=True, through=Tagged)
 
@@ -391,6 +399,31 @@ class Feeding(models.Model):
         validate_time(self.start, "start")
         validate_duration(self)
         validate_unique_period(Feeding.objects.filter(child_id=self.child_id), self)
+        if self.type == "mixed":
+            if self.method != "bottle":
+                raise ValidationError(
+                    {"method": _("Mixed feeding must use the bottle method.")}
+                )
+
+            breast_milk_amount = self.breast_milk_amount or 0
+            formula_amount = self.formula_amount or 0
+
+            if breast_milk_amount < 0:
+                raise ValidationError(
+                    {"breast_milk_amount": _("Amount cannot be negative.")}
+                )
+
+            if formula_amount < 0:
+                raise ValidationError(
+                    {"formula_amount": _("Amount cannot be negative.")}
+                )
+
+            if breast_milk_amount == 0 and formula_amount == 0:
+                raise ValidationError(
+                    _("At least one milk amount must be greater than zero.")
+                )
+
+            self.amount = breast_milk_amount + formula_amount
 
 
 class HeadCircumference(models.Model):
