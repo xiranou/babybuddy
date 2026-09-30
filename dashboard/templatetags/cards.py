@@ -242,14 +242,24 @@ def card_feeding_recent(context, child, end_date=None):
 
 @register.inclusion_tag("cards/feeding_average.html", takes_context=True)
 def card_feeding_average(context, child):
-    """
-    Calculates the average bottle feeding amount for a configurable
-    date range supplied by the dashboard.
-    """
     request = context["request"]
 
-    start_date = request.GET.get("feeding_start")
-    end_date = request.GET.get("feeding_end")
+    period = request.GET.get("feeding_average_days", "7")
+
+    if period == "all":
+        start_date = None
+        days = "all"
+    else:
+        try:
+            days = int(period)
+        except (TypeError, ValueError):
+            days = 7
+
+        if days not in (7, 14, 21, 30):
+            days = "all"
+
+        end_date = timezone.localtime()
+        start_date = end_date - timezone.timedelta(days=days)
 
     feedings = models.Feeding.objects.filter(
         child=child,
@@ -257,11 +267,8 @@ def card_feeding_average(context, child):
         amount__isnull=False,
     )
 
-    if start_date:
-        feedings = feedings.filter(start__date__gte=start_date)
-
-    if end_date:
-        feedings = feedings.filter(start__date__lte=end_date)
+    if start_date is not None:
+        feedings = feedings.filter(start__range=[start_date, end_date])
 
     statistics = feedings.aggregate(
         average=Avg("amount"),
@@ -272,8 +279,7 @@ def card_feeding_average(context, child):
         "type": "feeding",
         "average": statistics["average"],
         "count": statistics["count"],
-        "start_date": start_date,
-        "end_date": end_date,
+        "days": days,
         "empty": statistics["count"] == 0,
         "hide_empty": _hide_empty(context),
     }
