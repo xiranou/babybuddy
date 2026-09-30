@@ -240,6 +240,45 @@ def card_feeding_recent(context, child, end_date=None):
     }
 
 
+@register.inclusion_tag("cards/feeding_average.html", takes_context=True)
+def card_feeding_average(context, child):
+    """
+    Calculates the average bottle feeding amount for a configurable
+    date range supplied by the dashboard.
+    """
+    request = context["request"]
+
+    start_date = request.GET.get("feeding_start")
+    end_date = request.GET.get("feeding_end")
+
+    feedings = models.Feeding.objects.filter(
+        child=child,
+        method="bottle",
+        amount__isnull=False,
+    )
+
+    if start_date:
+        feedings = feedings.filter(start__date__gte=start_date)
+
+    if end_date:
+        feedings = feedings.filter(start__date__lte=end_date)
+
+    statistics = feedings.aggregate(
+        average=Avg("amount"),
+        count=Count("id"),
+    )
+
+    return {
+        "type": "feeding",
+        "average": statistics["average"],
+        "count": statistics["count"],
+        "start_date": start_date,
+        "end_date": end_date,
+        "empty": statistics["count"] == 0,
+        "hide_empty": _hide_empty(context),
+    }
+
+
 @register.inclusion_tag("cards/feeding_last.html", takes_context=True)
 def card_feeding_last(context, child):
     """
