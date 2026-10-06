@@ -1,0 +1,6 @@
+FROM lscr.io/linuxserver/babybuddy:latest
+
+COPY . /app/www/public/
+
+LABEL org.opencontainers.image.source="https://github.com/xiranou/babybuddy"
+LABEL org.opencontainers.image.description="Baby Buddy with Average Bottle Size dashboard card"

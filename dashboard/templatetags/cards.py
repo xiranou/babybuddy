@@ -246,9 +246,12 @@ def card_feeding_average(context, child):
 
     period = request.GET.get("feeding_average_days", "7")
 
+    end_date = timezone.localtime()
+    end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+
     if period == "all":
-        start_date = None
         days = "all"
+        start_date = None
     else:
         try:
             days = int(period)
@@ -256,10 +259,12 @@ def card_feeding_average(context, child):
             days = 7
 
         if days not in (7, 14, 21, 30):
-            days = "all"
+            days = 7
 
-        end_date = timezone.localtime()
-        start_date = end_date - timezone.timedelta(days=days)
+        # Include today plus the preceding (days - 1) calendar days.
+        start_date = end_date.replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ) - timezone.timedelta(days=days - 1)
 
     feedings = models.Feeding.objects.filter(
         child=child,
@@ -271,13 +276,26 @@ def card_feeding_average(context, child):
         feedings = feedings.filter(start__range=[start_date, end_date])
 
     statistics = feedings.aggregate(
-        average=Avg("amount"),
+        total=Sum("amount"),
         count=Count("id"),
+    )
+
+    if days == "all":
+        if statistics["count"]:
+            first_feeding = feedings.order_by("start").first()
+            first_date = timezone.localtime(first_feeding.start).date()
+            last_date = end_date.date()
+            days = (last_date - first_date).days + 1
+        else:
+            days = 0
+
+    average = (
+        statistics["total"] / days if days and statistics["total"] is not None else None
     )
 
     return {
         "type": "feeding",
-        "average": statistics["average"],
+        "average": average,
         "count": statistics["count"],
         "days": days,
         "empty": statistics["count"] == 0,
