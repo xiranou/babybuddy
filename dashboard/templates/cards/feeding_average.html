@@ -1,0 +1,78 @@
+{% extends "cards/base.html" %}
+{% load duration i18n %}
+{% block header %}
+    {% trans "Average Bottle Size" %}
+{% endblock %}
+{% block title %}
+    {% if average is not None %}
+        {{ average|floatformat }}
+    {% else %}
+        {% trans "None" %}
+    {% endif %}
+{% endblock %}
+{% block content %}
+    {% if count %}
+        {% blocktrans trimmed count counter=count %}
+            {{ counter }} bottle
+        {% plural %}
+            {{ counter }} bottles
+        {% endblocktrans %}
+    {% endif %}
+    <form method="get">
+        <fieldset>
+            <legend>{% trans "Period" %}</legend>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="radio"
+                           id="feeding-average-7"
+                           name="feeding_average_days"
+                           value="7"
+                           onchange="this.form.submit()"
+                           {% if days == 7 %}checked{% endif %}>
+                    <label class="form-check-label" for="feeding-average-7">{% trans "7 days" %}</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="radio"
+                           id="feeding-average-14"
+                           name="feeding_average_days"
+                           value="14"
+                           onchange="this.form.submit()"
+                           {% if days == 14 %}checked{% endif %}>
+                    <label class="form-check-label" for="feeding-average-14">{% trans "14 days" %}</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="radio"
+                           id="feeding-average-21"
+                           name="feeding_average_days"
+                           value="21"
+                           onchange="this.form.submit()"
+                           {% if days == 21 %}checked{% endif %}>
+                    <label class="form-check-label" for="feeding-average-21">{% trans "21 days" %}</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="radio"
+                           id="feeding-average-30"
+                           name="feeding_average_days"
+                           value="30"
+                           onchange="this.form.submit()"
+                           {% if days == 30 %}checked{% endif %}>
+                    <label class="form-check-label" for="feeding-average-30">{% trans "1 month" %}</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input"
+                           type="radio"
+                           id="feeding-average-all"
+                           name="feeding_average_days"
+                           value="all"
+                           onchange="this.form.submit()"
+                           {% if days == "all" %}checked{% endif %}>
+                    <label class="form-check-label" for="feeding-average-all">{% trans "All" %}</label>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+{% endblock %}

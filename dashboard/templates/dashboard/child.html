@@ -37,6 +37,7 @@
             <div class="col-sm-6 col-lg-4">{% card_medication_last object %}</div>
         {% endif %}
         {% if perms.core.view_feeding %}
+            <div class="col-sm-6 col-lg-4">{% card_feeding_average object %}</div>
             <div class="col-sm-6 col-lg-4">{% card_feeding_last_method object %}</div>
             <div class="col-sm-6 col-lg-4">{% card_feeding_recent object %}</div>
         {% endif %}

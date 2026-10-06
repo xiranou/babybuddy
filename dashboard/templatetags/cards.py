@@ -240,6 +240,51 @@ def card_feeding_recent(context, child, end_date=None):
     }
 
 
+@register.inclusion_tag("cards/feeding_average.html", takes_context=True)
+def card_feeding_average(context, child):
+    request = context["request"]
+
+    period = request.GET.get("feeding_average_days", "7")
+
+    if period == "all":
+        start_date = None
+        days = "all"
+    else:
+        try:
+            days = int(period)
+        except (TypeError, ValueError):
+            days = 7
+
+        if days not in (7, 14, 21, 30):
+            days = "all"
+
+        end_date = timezone.localtime()
+        start_date = end_date - timezone.timedelta(days=days)
+
+    feedings = models.Feeding.objects.filter(
+        child=child,
+        method="bottle",
+        amount__isnull=False,
+    )
+
+    if start_date is not None:
+        feedings = feedings.filter(start__range=[start_date, end_date])
+
+    statistics = feedings.aggregate(
+        average=Avg("amount"),
+        count=Count("id"),
+    )
+
+    return {
+        "type": "feeding",
+        "average": statistics["average"],
+        "count": statistics["count"],
+        "days": days,
+        "empty": statistics["count"] == 0,
+        "hide_empty": _hide_empty(context),
+    }
+
+
 @register.inclusion_tag("cards/feeding_last.html", takes_context=True)
 def card_feeding_last(context, child):
     """
